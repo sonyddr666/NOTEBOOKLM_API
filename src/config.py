@@ -2,9 +2,9 @@
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -27,6 +27,26 @@ class Settings(BaseSettings):
     telegram_rate_limit: int = Field(default=30, alias="TELEGRAM_RATE_LIMIT")  # messages per minute
     telegram_admin_users: list[int] = Field(default_factory=list, alias="TELEGRAM_ADMIN_USERS")
     telegram_allowed_users: list[int] = Field(default_factory=list, alias="TELEGRAM_ALLOWED_USERS")
+    
+    @field_validator("telegram_admin_users", "telegram_allowed_users", mode="before")
+    @classmethod
+    def parse_user_list(cls, v: Union[int, str, list, None]) -> list[int]:
+        """Parse user list from various formats: int, str, or list."""
+        if v is None:
+            return []
+        if isinstance(v, int):
+            return [v]
+        if isinstance(v, str):
+            # Handle comma-separated string
+            if not v.strip():
+                return []
+            try:
+                return [int(x.strip()) for x in v.split(",") if x.strip()]
+            except ValueError:
+                return []
+        if isinstance(v, list):
+            return [int(x) if isinstance(x, (int, str)) else x for x in v]
+        return []
     
     # NotebookLM Settings
     notebooklm_profile: str = Field(default="default", alias="NOTEBOOKLM_PROFILE")
