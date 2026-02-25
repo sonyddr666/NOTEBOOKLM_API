@@ -8,6 +8,9 @@ from .exceptions import (
     SourceError,
     StudioError,
     RateLimitError,
+    ResearchError,
+    ShareError,
+    NoteError,
 )
 
 __all__ = [
@@ -19,4 +22,7 @@ __all__ = [
     "SourceError",
     "StudioError",
     "RateLimitError",
+    "ResearchError",
+    "ShareError",
+    "NoteError",
 ]

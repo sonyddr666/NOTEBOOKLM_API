@@ -7,6 +7,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 
 from src.config import get_settings
 from src.bot.handlers.start import start_handler, help_handler, auth_handler
+from src.bot.handlers.auth import cookies_handler, cookie_message_handler
 from src.bot.handlers.notebooks import (
     notebooks_handler,
     create_notebook_handler,
@@ -45,6 +46,10 @@ def check_bot_token():
 async def handle_text_message(update: Update, context) -> None:
     """Handle text messages for multi-step conversations."""
     if not update.effective_user or not update.message:
+        return
+    
+    # Check if we are waiting for cookies from the other handler
+    if context.user_data.get("awaiting_cookies"):
         return
     
     user_id = update.effective_user.id
@@ -132,6 +137,8 @@ def create_application() -> Application:
     application.add_handler(start_handler)
     application.add_handler(help_handler)
     application.add_handler(auth_handler)
+    application.add_handler(cookies_handler)
+    application.add_handler(cookie_message_handler)
     
     # Notebook commands
     application.add_handler(notebooks_handler)
