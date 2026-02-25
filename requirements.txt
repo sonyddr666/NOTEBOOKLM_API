@@ -1,4 +1,4 @@
-# NotebookLM API and Telegram Bot Dependencies
+# NotebookLM API and Telegram Bot - Production Dependencies
 
 # Core dependencies
 python-dotenv>=1.0.0
@@ -7,7 +7,7 @@ pydantic-settings>=2.0.0
 
 # FastAPI and server
 fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
+uvicorn>=0.27.0
 python-multipart>=0.0.6
 
 # Telegram Bot
@@ -15,13 +15,3 @@ python-telegram-bot>=21.0
 
 # HTTP client
 httpx>=0.27.0
-
-# Optional: Redis for rate limiting and caching
-# redis>=5.0.0
-
-# Development dependencies
-pytest>=8.0.0
-pytest-asyncio>=0.23.0
-black>=24.0.0
-ruff>=0.1.0
-mypy>=1.0.0
