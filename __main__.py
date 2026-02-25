@@ -26,8 +26,8 @@ def main():
     parser.add_argument(
         "--port",
         type=int,
-        default=8000,
-        help="API port (default: 8000)"
+        default=8777,
+        help="API port (default: 8777)"
     )
     
     parser.add_argument(
@@ -68,7 +68,7 @@ def main():
             api_process.join()
 
 
-def _run_api(host: str = "0.0.0.0", port: int = 8000):
+def _run_api(host: str = "0.0.0.0", port: int = 8777):
     """Run API server."""
     import uvicorn
     uvicorn.run(

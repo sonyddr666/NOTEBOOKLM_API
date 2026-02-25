@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     
     # API Settings
     api_host: str = Field(default="0.0.0.0", alias="API_HOST")
-    api_port: int = Field(default=8000, alias="API_PORT")
+    api_port: int = Field(default=8777, alias="API_PORT")
     api_key: Optional[str] = Field(default=None, alias="API_KEY")
     api_rate_limit: int = Field(default=100, alias="API_RATE_LIMIT")  # requests per minute
     

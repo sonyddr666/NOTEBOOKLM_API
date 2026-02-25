@@ -69,9 +69,9 @@ Não precisa mais rodar comandos no terminal do servidor para logar no Google:
 
 ## 🌐 REST API
 
-A API estará disponível em `http://localhost:8000`.
-- **Swagger UI**: `http://localhost:8000/docs`
-- **Health Check**: `http://localhost:8000/health`
+A API estará disponível em `http://localhost:8777`.
+- **Swagger UI**: `http://localhost:8777/docs`
+- **Health Check**: `http://localhost:8777/health`
 
 ---
 

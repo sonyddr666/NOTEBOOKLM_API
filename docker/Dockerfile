@@ -34,11 +34,11 @@ RUN mkdir -p /app/data
 RUN chmod +x scripts/*.sh 2>/dev/null || true
 
 # Expose API port
-EXPOSE 8000
+EXPOSE 8777
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8777/health || exit 1
 
 # Default command (can be overridden)
 CMD ["python", "-m", "src.api.main"]

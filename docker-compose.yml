@@ -6,7 +6,7 @@ services:
     container_name: notebooklm-api
     restart: always
     ports:
-      - "8000:8000"
+      - "8777:8777"
     volumes:
       - .env:/app/.env
       - /home/larri/.notebooklm-mcp-cli:/root/.notebooklm-mcp-cli
