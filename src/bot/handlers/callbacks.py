@@ -122,6 +122,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif data.startswith("add_research_"):
             notebook_id = data[13:]
             await prompt_research(query, context, notebook_id)
+        elif data.startswith("import_all_"):
+            # Format: import_all_{notebook_id}_{task_id}
+            parts = data.split("_")
+            notebook_id = parts[2]
+            task_id = parts[3]
+            await do_import_research(query, notebook_id, task_id)
         
         # Share actions
         elif data.startswith("make_public_"):
@@ -447,27 +453,59 @@ async def show_sources(query, notebook_id: str) -> None:
 
 
 async def show_status(query, notebook_id: str) -> None:
-    """Show studio status."""
+    """Show studio and research status."""
     client = get_client()
+    
+    # 1. Get Studio Artifacts
     artifacts = client.get_studio_status(notebook_id)
     
-    if not artifacts:
+    # 2. Get Research Status
+    research = None
+    try:
+        research = client.poll_research(notebook_id, None)
+    except Exception:
+        pass
+
+    text = "📊 *Notebook Status*\n\n"
+    
+    if research and research.get("status") != "no_research":
+        r_status = research.get("status")
+        r_query = research.get("query", "Unknown topic")
+        r_count = research.get("source_count", 0)
+        
+        status_emoji = "⏳" if r_status == "in_progress" else "✅"
+        text += f"{status_emoji} *Research:* {r_query}\n"
+        text += f"   └ Status: {r_status.capitalize()}\n"
+        text += f"   └ Sources found: {r_count}\n\n"
+    
+    if artifacts:
+        text += "*Studio Content:*\n"
+        for artifact in artifacts[:10]:
+            status_emoji = "✅" if artifact.get("status") == "completed" else "⏳"
+            text += f"{status_emoji} {artifact.get('type', 'Unknown')}: {artifact.get('title', 'Untitled')}\n"
+    elif not research or research.get("status") == "no_research":
         await query.edit_message_text(
-            "📊 No studio content found.\n\n"
-            "Use the Studio menu to create content.",
+            "📊 No active processes or studio content found.",
             reply_markup=back_keyboard(f"notebook_{notebook_id}"),
         )
         return
     
-    text = "📊 *Studio Status*\n\n"
-    for artifact in artifacts[:10]:
-        status_emoji = "✅" if artifact.get("status") == "completed" else "⏳"
-        text += f"{status_emoji} {artifact.get('type', 'Unknown')}: {artifact.get('title', 'Untitled')}\n"
+    # Custom keyboard if research is ready to import
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    keyboard = []
+    
+    if research and research.get("status") == "completed" and research.get("source_count", 0) > 0:
+        task_id = research.get("task_id")
+        keyboard.append([
+            InlineKeyboardButton(f"📥 Import {research['source_count']} Sources", callback_data=f"import_all_{notebook_id}_{task_id}")
+        ])
+    
+    keyboard.append([InlineKeyboardButton("◀️ Back", callback_data=f"notebook_{notebook_id}")])
     
     await query.edit_message_text(
         text,
         parse_mode="Markdown",
-        reply_markup=back_keyboard(f"notebook_{notebook_id}"),
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
@@ -736,6 +774,50 @@ async def start_query_mode(query, context, notebook_id: str) -> None:
         parse_mode="Markdown",
         reply_markup=back_keyboard(f"notebook_{notebook_id}"),
     )
+
+
+async def do_import_research(query, notebook_id: str, task_id: str) -> None:
+    """Import all sources from a completed research task."""
+    client = get_client()
+    
+    await query.edit_message_text(
+        "📥 *Importing Sources...*\n\n"
+        "Please wait while I add the new sources to your notebook.",
+        parse_mode="Markdown",
+    )
+    
+    try:
+        # 1. Get the sources from research
+        research = client.poll_research(notebook_id, task_id)
+        
+        if not research or not research.get("sources"):
+            await query.edit_message_text(
+                "❌ No sources found to import.",
+                reply_markup=back_keyboard(f"notebook_{notebook_id}"),
+            )
+            return
+            
+        sources = research["sources"]
+        
+        # 2. Import all sources at once
+        # (The API will handle the list and import each one)
+        imported = client.import_research_sources(notebook_id, task_id, sources)
+        
+        success_count = len(imported)
+        
+        await query.edit_message_text(
+            f"✅ *Import Completed!*\n\n"
+            f"📥 Sources successfully imported: {success_count}\n"
+            f"📚 Total found: {len(sources)}",
+            parse_mode="Markdown",
+            reply_markup=back_keyboard(f"notebook_{notebook_id}"),
+        )
+        
+    except Exception as e:
+        await query.edit_message_text(
+            f"❌ Failed to import sources: {str(e)}",
+            reply_markup=back_keyboard(f"notebook_{notebook_id}"),
+        )
 
 
 # Handler instance
