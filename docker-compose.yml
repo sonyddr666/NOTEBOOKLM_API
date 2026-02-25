@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # NotebookLM API Server
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: notebooklm-api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_KEY=${API_KEY:-}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - NOTEBOOKLM_DATA_DIR=/app/data
+      - NOTEBOOKLM_PROFILE=${NOTEBOOKLM_PROFILE:-default}
+      - NOTEBOOKLM_QUERY_TIMEOUT=${NOTEBOOKLM_QUERY_TIMEOUT:-120.0}
+      - NOTEBOOKLM_HL=${NOTEBOOKLM_HL:-en}
+    volumes:
+      - notebooklm-data:/app/data
+      - ../src:/app/src:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Telegram Bot
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: notebooklm-bot
+    command: ["python", "-m", "src.bot.main"]
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_RATE_LIMIT=${TELEGRAM_RATE_LIMIT:-30}
+      - TELEGRAM_ADMIN_USERS=${TELEGRAM_ADMIN_USERS:-}
+      - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS:-}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - NOTEBOOKLM_DATA_DIR=/app/data
+      - NOTEBOOKLM_PROFILE=${NOTEBOOKLM_PROFILE:-default}
+      - NOTEBOOKLM_QUERY_TIMEOUT=${NOTEBOOKLM_QUERY_TIMEOUT:-120.0}
+      - NOTEBOOKLM_HL=${NOTEBOOKLM_HL:-en}
+    volumes:
+      - notebooklm-data:/app/data
+      - ../src:/app/src:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Redis (optional, for rate limiting and caching)
+  redis:
+    image: redis:7-alpine
+    container_name: notebooklm-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    profiles:
+      - redis
+
+volumes:
+  notebooklm-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  default:
+    name: notebooklm-network
