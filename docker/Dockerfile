@@ -20,8 +20,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy notebooklm-mcp-cli and install it
-COPY notebooklm-mcp-cli/ ./notebooklm-mcp-cli/
-RUN pip install --no-cache-dir ./notebooklm-mcp-cli
+COPY notebookLM-MCP-CLI/ ./notebookLM-MCP-CLI/
+RUN pip install --no-cache-dir ./notebookLM-MCP-CLI
 
 # Copy application code
 COPY src/ ./src/
