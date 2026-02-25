@@ -105,6 +105,9 @@ def sources_list_keyboard(notebook_id: str, sources: list[dict]) -> InlineKeyboa
         InlineKeyboardButton("➕ Add Text", callback_data=f"add_text_{notebook_id}"),
     ])
     keyboard.append([
+        InlineKeyboardButton("🔍 Research", callback_data=f"add_research_{notebook_id}"),
+    ])
+    keyboard.append([
         InlineKeyboardButton("◀️ Back", callback_data=f"notebook_{notebook_id}"),
     ])
     return InlineKeyboardMarkup(keyboard)

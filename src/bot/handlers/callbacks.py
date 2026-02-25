@@ -119,6 +119,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif data.startswith("add_text_"):
             notebook_id = data[9:]
             await prompt_add_text(query, context, notebook_id)
+        elif data.startswith("add_research_"):
+            notebook_id = data[13:]
+            await prompt_research(query, context, notebook_id)
         
         # Share actions
         elif data.startswith("make_public_"):
@@ -274,15 +277,23 @@ Use /help for full command list.
 # Deep Research Handlers
 # ============================================================================
 
-async def prompt_research(query, context) -> None:
+async def prompt_research(query, context, notebook_id: str = None) -> None:
     """Prompt for deep research topic."""
-    set_user_state(query.from_user.id, "deep_research_topic", {})
+    set_user_state(query.from_user.id, "deep_research_topic", {"notebook_id": notebook_id})
+    
+    text = "🔬 *Deep Research*\n\n"
+    if notebook_id:
+        text += "This will add new sources to your current notebook.\n\n"
+    
+    text += "Enter a topic or question to research.\n\n"
+    text += "Example: Artificial Intelligence trends 2025"
+    
+    back_target = f"sources_{notebook_id}" if notebook_id else "menu_main"
+    
     await query.edit_message_text(
-        "🔬 *Deep Research*\n\n"
-        "Enter a topic or question to research.\n\n"
-        "Example: Artificial Intelligence trends 2025",
+        text,
         parse_mode="Markdown",
-        reply_markup=back_keyboard(),
+        reply_markup=back_keyboard(back_target),
     )
 
 
@@ -341,9 +352,16 @@ async def set_research_source(query, context, source: str) -> None:
     try:
         client = get_client()
         
-        # Create notebook with topic as title
-        notebook = client.create_notebook(title=topic)
-        notebook_id = notebook.get("id")
+        # Get notebook_id from state if it exists, otherwise create new
+        notebook_id = state.get("data", {}).get("notebook_id")
+        
+        if not notebook_id:
+            # Create notebook with topic as title
+            notebook = client.create_notebook(title=topic)
+            notebook_id = notebook.get("id")
+            is_new = True
+        else:
+            is_new = False
         
         # Start research
         result = client.start_research(
@@ -357,9 +375,12 @@ async def set_research_source(query, context, source: str) -> None:
         
         clear_user_state(user_id)
         
+        status_text = "Created New Notebook" if is_new else "Adding to Existing Notebook"
+        
         await query.message.reply_text(
             f"✅ *Deep Research Started!*\n\n"
-            f"📝 Notebook: {topic}\n"
+            f"📈 Status: {status_text}\n"
+            f"📝 Topic: {topic}\n"
             f"🔬 Mode: {mode}\n"
             f"🌐 Source: {source}\n\n"
             f"🆔 Notebook ID: `{notebook_id}`\n"

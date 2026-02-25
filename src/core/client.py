@@ -617,10 +617,12 @@ class NotebookLMClientWrapper:
         Returns:
             Research info with research_id
         """
-        if research_type == "deep":
-            result = self.client.start_deep_research(notebook_id, query)
-        else:
-            result = self.client.start_fast_research(notebook_id, query, source_type=source_type)
+        result = self.client.start_research(
+            notebook_id=notebook_id,
+            query=query,
+            mode=research_type,
+            source=source_type
+        )
         return result if result else {}
     
     def poll_research(self, notebook_id: str, research_id: str) -> dict:
