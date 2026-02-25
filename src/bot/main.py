@@ -49,11 +49,14 @@ async def handle_text_message(update: Update, context) -> None:
     if not update.effective_user or not update.message:
         return
     
-    # Check if we are waiting for cookies from the other handler
+    user_id = update.effective_user.id
+    
+    # Check if we are waiting for cookies from the auth handler
     if context.user_data.get("awaiting_cookies"):
+        from src.bot.handlers.auth import handle_cookie_input
+        await handle_cookie_input(update, context)
         return
     
-    user_id = update.effective_user.id
     state = get_user_state(user_id)
     
     if not state:
@@ -154,7 +157,6 @@ def create_application() -> Application:
     application.add_handler(help_handler)
     application.add_handler(auth_handler)
     application.add_handler(cookies_handler)
-    application.add_handler(cookie_message_handler)
     
     # Notebook commands
     application.add_handler(notebooks_handler)
@@ -171,9 +173,9 @@ def create_application() -> Application:
     # Callback handler (for inline keyboards)
     application.add_handler(callback_handler)
     
-    # Text message handler (for multi-step conversations)
+    # Text and document message handler (for multi-step conversations)
     # This should be added last to not interfere with other handlers
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
+    application.add_handler(MessageHandler((filters.TEXT | filters.Document.ALL) & ~filters.COMMAND, handle_text_message))
     
     return application
 
