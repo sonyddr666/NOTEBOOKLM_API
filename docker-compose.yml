@@ -4,7 +4,7 @@ services:
   # NotebookLM API Server
   api:
     build:
-      context: ..
+      context: .
       dockerfile: docker/Dockerfile
     container_name: notebooklm-api
     ports:
@@ -21,7 +21,6 @@ services:
       - NOTEBOOKLM_HL=${NOTEBOOKLM_HL:-en}
     volumes:
       - notebooklm-data:/app/data
-      - ../src:/app/src:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -33,7 +32,7 @@ services:
   # Telegram Bot
   bot:
     build:
-      context: ..
+      context: .
       dockerfile: docker/Dockerfile
     container_name: notebooklm-bot
     command: ["python", "-m", "src.bot.main"]
@@ -50,7 +49,6 @@ services:
       - NOTEBOOKLM_HL=${NOTEBOOKLM_HL:-en}
     volumes:
       - notebooklm-data:/app/data
-      - ../src:/app/src:ro
     depends_on:
       api:
         condition: service_healthy
