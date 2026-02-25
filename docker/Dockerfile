@@ -15,9 +15,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create app directory
 WORKDIR /app
 
-# Install Python dependencies
+# Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy notebooklm-mcp-cli and install it
+COPY notebooklm-mcp-cli/ ./notebooklm-mcp-cli/
+RUN pip install --no-cache-dir ./notebooklm-mcp-cli
 
 # Copy application code
 COPY src/ ./src/
