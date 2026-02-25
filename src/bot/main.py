@@ -23,6 +23,7 @@ from src.bot.handlers.chat import (
 )
 from src.bot.handlers.callbacks import callback_handler
 from src.bot.middleware import get_user_state, clear_user_state, set_user_state
+from src.bot.keyboards import main_menu_keyboard, research_mode_keyboard
 
 # Configure logging
 logging.basicConfig(
@@ -118,6 +119,21 @@ async def handle_text_message(update: Update, context) -> None:
                 notebook_id, 
                 update.message.text,
                 conversation_id
+            )
+        
+        elif state_name == "deep_research_topic":
+            # Handle deep research topic input
+            from src.bot.handlers.callbacks import set_research_mode
+            topic = update.message.text
+            
+            # Store topic and ask for mode
+            state_data["topic"] = topic
+            set_user_state(user_id, "deep_research_mode", {"topic": topic, "mode": "fast"})
+            
+            await update.message.reply_text(
+                f"📝 Topic: {topic}\n\n"
+                "Select research mode:",
+                reply_markup=research_mode_keyboard(),
             )
     
     except Exception as e:

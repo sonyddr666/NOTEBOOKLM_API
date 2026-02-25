@@ -15,6 +15,9 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton("🎙️ Studio", callback_data="menu_studio"),
         ],
         [
+            InlineKeyboardButton("🔬 Deep Research", callback_data="menu_research"),
+        ],
+        [
             InlineKeyboardButton("⚙️ Settings", callback_data="menu_settings"),
             InlineKeyboardButton("❓ Help", callback_data="menu_help"),
         ],
@@ -156,5 +159,37 @@ def cancel_keyboard() -> InlineKeyboardMarkup:
     """Cancel button keyboard."""
     keyboard = [
         [InlineKeyboardButton("❌ Cancel", callback_data="cancel")],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def research_mode_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard for selecting research mode."""
+    keyboard = [
+        [
+            InlineKeyboardButton("⚡ Fast (~30s, ~10 sources)", callback_data="research_mode_fast"),
+        ],
+        [
+            InlineKeyboardButton("🔬 Deep (~5min, ~40 sources)", callback_data="research_mode_deep"),
+        ],
+        [
+            InlineKeyboardButton("◀️ Back", callback_data="menu_main"),
+        ],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def research_source_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard for selecting research source type."""
+    keyboard = [
+        [
+            InlineKeyboardButton("🌐 Web Search", callback_data="research_source_web"),
+        ],
+        [
+            InlineKeyboardButton("📁 Google Drive", callback_data="research_source_drive"),
+        ],
+        [
+            InlineKeyboardButton("◀️ Back", callback_data="menu_research"),
+        ],
     ]
     return InlineKeyboardMarkup(keyboard)

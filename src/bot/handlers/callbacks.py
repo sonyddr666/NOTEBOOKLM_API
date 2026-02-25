@@ -13,8 +13,10 @@ from src.bot.keyboards import (
     sources_list_keyboard,
     share_keyboard,
     back_keyboard,
+    research_mode_keyboard,
+    research_source_keyboard,
 )
-from src.bot.middleware import rate_limit_middleware, set_user_state, clear_user_state
+from src.bot.middleware import rate_limit_middleware, set_user_state, clear_user_state, get_user_state
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -45,6 +47,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await show_settings(query)
         elif data == "menu_help":
             await show_help(query)
+        
+        # Deep Research menu
+        elif data == "menu_research":
+            await prompt_research(query, context)
+        elif data.startswith("research_mode_"):
+            mode = data.replace("research_mode_", "")
+            await set_research_mode(query, context, mode)
+        elif data.startswith("research_source_"):
+            source = data.replace("research_source_", "")
+            await set_research_source(query, context, source)
         
         # Notebook selection
         elif data.startswith("notebook_"):
@@ -256,6 +268,111 @@ Use /help for full command list.
         parse_mode="Markdown",
         reply_markup=back_keyboard(),
     )
+
+
+# ============================================================================
+# Deep Research Handlers
+# ============================================================================
+
+async def prompt_research(query, context) -> None:
+    """Prompt for deep research topic."""
+    set_user_state(query.from_user.id, "deep_research_topic", {})
+    await query.edit_message_text(
+        "🔬 *Deep Research*\n\n"
+        "Enter a topic or question to research.\n\n"
+        "Example: Artificial Intelligence trends 2025",
+        parse_mode="Markdown",
+        reply_markup=back_keyboard(),
+    )
+
+
+async def set_research_mode(query, context, mode: str) -> None:
+    """Set research mode and ask for source type."""
+    user_id = query.from_user.id
+    state = get_user_state(user_id)
+    
+    if state:
+        state["data"]["mode"] = mode
+    else:
+        set_user_state(user_id, "deep_research_source", {"mode": mode})
+    
+    mode_text = "Fast" if mode == "fast" else "Deep"
+    await query.edit_message_text(
+        f"🔬 *Deep Research*\n\n"
+        f"Mode: *{mode_text}*\n\n"
+        "Select source type:",
+        parse_mode="Markdown",
+        reply_markup=research_source_keyboard(),
+    )
+
+
+async def set_research_source(query, context, source: str) -> None:
+    """Set research source and start research."""
+    user_id = query.from_user.id
+    state = get_user_state(user_id)
+    
+    if not state:
+        await query.edit_message_text(
+            "❌ Session expired. Please start research again.",
+            reply_markup=back_keyboard("menu_main"),
+        )
+        return
+    
+    # Get topic from state
+    topic = state.get("data", {}).get("topic", "")
+    mode = state.get("data", {}).get("mode", "fast")
+    
+    if not topic:
+        await query.edit_message_text(
+            "❌ No topic specified. Please start research again.",
+            reply_markup=back_keyboard("menu_research"),
+        )
+        return
+    
+    # Start deep research
+    await query.edit_message_text(
+        f"🔬 Starting Deep Research...\n\n"
+        f"Topic: {topic}\n"
+        f"Mode: {mode}\n"
+        f"Source: {source}\n\n"
+        "This may take a while...",
+    )
+    
+    try:
+        client = get_client()
+        
+        # Create notebook with topic as title
+        notebook = client.create_notebook(title=topic)
+        notebook_id = notebook.get("id")
+        
+        # Start research
+        result = client.start_research(
+            notebook_id=notebook_id,
+            query=topic,
+            research_type=mode,
+            source_type=source,
+        )
+        
+        research_id = result.get("research_id", "") or result.get("task_id", "")
+        
+        clear_user_state(user_id)
+        
+        await query.message.reply_text(
+            f"✅ *Deep Research Started!*\n\n"
+            f"📝 Notebook: {topic}\n"
+            f"🔬 Mode: {mode}\n"
+            f"🌐 Source: {source}\n\n"
+            f"🆔 Notebook ID: `{notebook_id}`\n"
+            f"🔍 Research ID: `{research_id}`\n\n"
+            f"Use /status {notebook_id} to check progress.",
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        clear_user_state(user_id)
+        await query.message.reply_text(
+            f"❌ Error: {str(e)}",
+            reply_markup=back_keyboard("menu_main"),
+        )
 
 
 # ============================================================================
