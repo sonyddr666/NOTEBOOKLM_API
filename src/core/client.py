@@ -31,11 +31,11 @@ class NotebookLMClientWrapper:
         """Get the path to the cookies file for the current profile."""
         return self.settings.notebooklm_data_dir / f"cookies_{self.profile}.json"
     
-    def _load_cookies(self) -> str:
+    def _load_cookies(self) -> dict[str, str]:
         """Load cookies from the auth file.
         
         Returns:
-            Cookie string for authentication
+            Cookie dict for authentication
             
         Raises:
             AuthenticationError: If cookies cannot be loaded
@@ -59,17 +59,30 @@ class NotebookLMClientWrapper:
                 data = json.load(f)
             
             # Handle different cookie formats
-            if isinstance(data, str):
-                return data
-            elif isinstance(data, dict):
-                # Convert dict to cookie string
+            if isinstance(data, dict):
+                # If it's already a dict of cookie name -> value
                 if 'cookies' in data:
-                    return data['cookies']
+                    # Might be nested format
+                    cookies_data = data['cookies']
+                    if isinstance(cookies_data, dict):
+                        return cookies_data
+                    elif isinstance(cookies_data, str):
+                        # Parse cookie string into dict
+                        return self._parse_cookie_string(cookies_data)
                 elif 'raw' in data:
-                    return data['raw']
+                    return self._parse_cookie_string(data['raw'])
                 else:
-                    # Assume it's a dict of cookie name -> value
-                    return '; '.join(f"{k}={v}" for k, v in data.items())
+                    # Assume it's already a dict of cookie name -> value
+                    return data
+            elif isinstance(data, str):
+                return self._parse_cookie_string(data)
+            elif isinstance(data, list):
+                # List of cookie dicts
+                result = {}
+                for item in data:
+                    if isinstance(item, dict) and 'name' in item and 'value' in item:
+                        result[item['name']] = item['value']
+                return result
             else:
                 raise AuthenticationError(f"Unknown cookie format in {cookies_path}")
                 
@@ -77,6 +90,23 @@ class NotebookLMClientWrapper:
             raise AuthenticationError(f"Invalid cookie file format: {e}")
         except Exception as e:
             raise AuthenticationError(f"Failed to load cookies: {e}")
+    
+    def _parse_cookie_string(self, cookie_str: str) -> dict[str, str]:
+        """Parse a cookie string into a dict.
+        
+        Args:
+            cookie_str: Cookie string like "name1=value1; name2=value2"
+            
+        Returns:
+            Dict of cookie name -> value
+        """
+        result = {}
+        for part in cookie_str.split(';'):
+            part = part.strip()
+            if '=' in part:
+                name, value = part.split('=', 1)
+                result[name.strip()] = value.strip()
+        return result
     
     def _create_client(self) -> NotebookLMClient:
         """Create a new NotebookLMClient instance.

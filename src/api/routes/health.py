@@ -20,14 +20,14 @@ async def health_check():
 @router.get("/ready")
 async def readiness_check():
     """Readiness check endpoint."""
-    from src.core import get_client
-    
     try:
+        from src.core import get_client
         client = get_client()
         # Try a simple operation to verify auth
         client.list_notebooks(max_results=1)
         return {"status": "ready"}
     except Exception as e:
+        # Return 200 but indicate not ready
         return {"status": "not_ready", "error": str(e)}
 
 
